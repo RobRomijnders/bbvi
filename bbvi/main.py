@@ -1,12 +1,11 @@
-import numpy as np
 from datetime import datetime
 from os.path import join
 import tensorflow as tf
 from bbvi.util import DataLoader
-from bbvi.model import MAPModel, VIReparamModel
+from bbvi.model import MAPModel, VIModel
 
 
-def train_laplace():
+def train_MAP():
     data_loader = DataLoader()
     model = MAPModel(num_features=data_loader.num_features)
 
@@ -28,13 +27,10 @@ def train_laplace():
                   f'Log posterior {log_posterior_train:8.3f}/{log_posterior_test:8.3f}  '
                   f'Accuracy {accuracy_train:5.3f}/{accuracy_test:5.3f}')
 
-    # Using our trained model, let's find the posterior predictive
-    # TODO Now do laplace integration here
 
-
-def train_vi_reparam():
+def train_vi():
     data_loader = DataLoader()
-    model = VIReparamModel(num_features=data_loader.num_features)
+    model = VIModel(num_features=data_loader.num_features, gradient_method='score')
 
     # Set up a session
     sess = tf.get_default_session()
@@ -49,7 +45,8 @@ def train_vi_reparam():
     for step in range(50000):
         X, y = data_loader.sample_batch()
         _, log_posterior_train, accuracy_train, summary_str = \
-            sess.run([model.train_step, model.log_p_theta_given_D, model.accuracy, model.summary_op], {model.data: X, model.targets: y})
+            sess.run([model.train_step, model.log_p_theta_given_D, model.accuracy, model.summary_op], {
+                model.data: X, model.targets: y})
 
         writer.add_summary(summary_str, step)
         writer.flush()
@@ -63,10 +60,8 @@ def train_vi_reparam():
                   f'Log posterior {log_posterior_train:8.3f}/{log_posterior_test:8.3f}  '
                   f'Accuracy {accuracy_train:5.3f}/{accuracy_test:5.3f} ')
 
-    # Using our trained model, let's find the posterior predictive
-
 
 if __name__ == '__main__':
-    with tf.Session() as sess:
-        # train_laplace()
-        train_vi_reparam()
+    with tf.Session() as session:
+        # train_MAP()
+        train_vi()

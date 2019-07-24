@@ -116,6 +116,7 @@ def get_random_normal_variable(name, shape, dtype=tf.float32, num_samples=13):
     standard_deviation = tf.nn.softplus(pre_sigma) + 1e-5
 
     # The famous reparametrization formula for the factorized Gaussian
-    weights = mean + standard_deviation * tf.random_normal([num_samples] + shape, 0.0, 1.0, dtype)
+    noise = tf.random_normal([num_samples] + shape, 0.0, 1.0, dtype)
+    weights = mean + standard_deviation * noise
 
-    return weights, mean, standard_deviation, pre_sigma
+    return weights, mean, standard_deviation, pre_sigma, noise
