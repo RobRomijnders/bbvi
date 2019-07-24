@@ -6,6 +6,9 @@ from scipy.stats import multivariate_normal
 
 
 class DataLoader:
+    """
+    Small wrapper to abstract all code relating to loading data
+    """
     def __init__(self, batch_size=16):
         # Wine data set
         dataset = load_wine()
@@ -38,9 +41,10 @@ class DataLoader:
     def num_features(self):
         return self.data['X_train'].shape[1]
 
-    def random_flip(self, data, portion):
+    @staticmethod
+    def random_flip(data, portion):
         """
-        randomly flip a portion of the binary labels. To spice up the problem a bit :)
+        Randomly flip a portion of the binary labels. To spice up the problem a bit :)
         :param data:
         :param portion:
         :return:
@@ -85,9 +89,10 @@ def get_random_normal_variable(name, shape, dtype=tf.float32, num_samples=13):
 
 
     Credits for code inspiration: https://github.com/DeNeutoy/bayesian-rnn/
-    :param name:
-    :param shape:
-    :param dtype:
+    :param name: Name for the corresponding tf variables
+    :param shape: shape for the variable. Note that weights are sampled and thus have +1 dimension
+    :param dtype: dtype for the variables involved
+    :param num_samples: number of samples from the variational distro over W
     :return:
     """
 
