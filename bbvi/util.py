@@ -77,7 +77,7 @@ class DataLoader:
         return self.data['X_' + data_split][idx], self.data['y_' + data_split][idx]
 
 
-def get_random_normal_variable(name, shape, dtype=tf.float32):
+def get_random_normal_variable(name, shape, dtype=tf.float32, num_samples=13):
     """
     Create weight tensors with factorized Gaussian approximation of each element.
 
@@ -116,6 +116,6 @@ def get_random_normal_variable(name, shape, dtype=tf.float32):
     standard_deviation = tf.nn.softplus(pre_sigma) + 1e-5
 
     # The famous reparametrization formula for the factorized Gaussian
-    weights = mean + standard_deviation * tf.random_normal(shape, 0.0, 1.0, dtype)
+    weights = mean + standard_deviation * tf.random_normal([num_samples] + shape, 0.0, 1.0, dtype)
 
     return weights, mean, standard_deviation, pre_sigma
