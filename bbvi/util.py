@@ -33,7 +33,7 @@ class DataLoader:
         self.data['X_train'], self.data['X_test'], self.data['y_train'], self.data['y_test'] = train_test_split(X, y)
 
         self.mean, self.std = None, None
-        self._normalize_data()
+        # self._normalize_data()
 
         self.batch_size = batch_size
 

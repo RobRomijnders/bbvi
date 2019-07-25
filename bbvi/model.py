@@ -30,7 +30,7 @@ class MAPModel:
         # Take into account the prior
         variance_prior = 10**2
         log_prior = (num_features + 1) / 2 + tf.log(2 * np.pi * variance_prior) \
-                        - 1 / (2 * variance_prior) * tf.reduce_sum(tf.pow(self.W, 2))
+                    - 1 / (2 * variance_prior) * tf.reduce_sum(tf.pow(self.W, 2))
 
         # Get the posterior probability for our parameter
         self.log_p_theta_given_D = log_likelihood + log_prior
@@ -50,6 +50,9 @@ class MAPModel:
         self.prediction = tf.squeeze(tf.cast(activation > 0, tf.float32), axis=1)
         approx_equal = tf.cast(tf.abs(self.prediction - self.targets) < 1E-4, tf.float32)
         self.accuracy = tf.reduce_mean(approx_equal)
+
+        # Make small experiment with the Hessian of the model parameters
+        self.hessians = tf.hessians(self.log_p_theta_given_D, [self.W])
 
 
 class VIModel:
@@ -97,13 +100,16 @@ class VIModel:
 
         # Set up a training schedule
         global_step = tf.train.get_or_create_global_step()
-        learning_rate = tf.train.exponential_decay(0.0005, global_step, 500, 0.1)
+
+        lr_init = 0.0005 if gradient_method == 'reparam' else 0.000005
+        learning_rate = tf.train.exponential_decay(lr_init, global_step, 500, 0.1)
 
         # Credits to David Blei for this name :p
         elbo_instant = log_likelihood + log_prior - log_q
 
         # Keep consistent with other implementations and define tvars and gradients as lists
         tvars = [nu_mu, nu_pre_sigma]
+        # TODO Maybe calculate both gradients so we can do a head-to-head comparison?
         if gradient_method == 'reparam':
             gradient_mu, gradient_pre_sigm = reparam_gradient(elbo_instant, W, num_mc, noise, nu_pre_sigma)
         elif gradient_method == 'score':
@@ -138,10 +144,34 @@ class VIModel:
 
         # Find std of gradient estimates. For clarity, we do not summarize statistics for each parameter, that would be
         # messy. Therefore, we average over all variational parameters, \phi
+        grad_std_mu = tf.math.reduce_std(gradient_mu, axis=0)
+        grad_std_psigm = tf.math.reduce_std(gradient_pre_sigm, axis=0)
+
+        # Also interesting to see the Signal to noise ratio's.
+        # NOTE: when comparing these numbers, recall that different runs of the experiment concerns different settings
+        # of the variational parameters. Thus one CANNOT conclude that one method has higher/lower SNR by comparing
+        # plots from different runs. TODO compare SNR's along same variational params
+        grad_mean_mu = tf.math.reduce_mean(gradient_mu, axis=0)
+        grad_mean_psigm = tf.math.reduce_mean(gradient_pre_sigm, axis=0)
+
+        grad_snr_mu = tf.reduce_mean(tf.abs(grad_mean_mu) / grad_std_mu)
+        grad_snr_psigm = tf.reduce_mean(tf.abs(grad_mean_psigm) / grad_std_psigm)
+
+        # Now add all the summaries
         tf.summary.scalar("Grad_ave_var_mu",
-                          tf.reduce_mean(tf.math.reduce_std(gradient_mu, axis=0)), family="grad_ave_var")
+                          tf.reduce_mean(grad_std_mu), family="grad_ave_var")
         tf.summary.scalar("Grad_ave_var_psigma",
-                          tf.reduce_mean(tf.math.reduce_std(gradient_pre_sigm, axis=0)), family="grad_ave_var")
+                          tf.reduce_mean(grad_std_psigm), family="grad_ave_var")
+
+        tf.summary.scalar("Grad_ave_mean_mu",
+                          tf.reduce_mean(grad_mean_mu), family="grad_ave_mean")
+        tf.summary.scalar("Grad_ave_mean_psigma",
+                          tf.reduce_mean(grad_mean_psigm), family="grad_ave_mean")
+
+        tf.summary.scalar("Grad_est_snr_ave_mu", grad_snr_mu, family="SNR_grad_est")
+        tf.summary.scalar("Grad_est_snr_ave_psigm", grad_snr_psigm, family="SNR_grad_est")
+
+        tf.add_to_collection("variational_sigma", sigma)
 
         self.summary_op = tf.summary.merge_all()
 
