@@ -50,7 +50,7 @@ We now compare variance of either gradient estimator. Both gradients take an exp
 
 The code implements both methods. When instantiating a `VIModel`, give as an argument which method you wish to run. The variances log in Tensorboard. So two runs with the pathwise derivative and the score function gradient look like:
 
-![Comparing_grad_var](/home/rob/Dropbox/ml_projects/bbvi/bbvi/im/compare_var_grad.png)
+![Comparing_grad_var](https://github.com/RobRomijnders/bbvi/blob/master/bbvi/im/compare_var_grad.png?raw=true)
 
 Note on interpreting this figure: This figure shows estimator variance for different runs of the training. One cannot compare point to point and say that one estimator has lower variance, because they might concern different values of the variational parameters. In general, we can conclude, yes, that the pathwise derivative has lower variance.
 
